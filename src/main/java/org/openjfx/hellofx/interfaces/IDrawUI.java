@@ -33,13 +33,16 @@ public interface IDrawUI extends IApp {
 		}  
 		
 		public default ScrollPane addResultBar(VBox box2,FlowPane fl) {
-			ScrollPane panel = new ScrollPane(fl);
-			panel.setStyle("-fx-max-width:600px;"
+			ScrollPane panel = new ScrollPane();
+			String styles = "-fx-max-width:600px;"
 				    + "-fx-min-width:300px;"
 				    + "-fx-width:90%;"
 				    + "-fx-height:300px;"
-				    + "-fx-background-color:white;");
-			panel.setHbarPolicy(ScrollBarPolicy.ALWAYS);
+				    + "-fx-background-color:white;";
+			panel.setStyle(styles);
+			fl.setStyle(styles);
+			panel.setVbarPolicy(ScrollBarPolicy.ALWAYS);
+			panel.setContent(fl);
 			return panel;
 		}
 
@@ -73,34 +76,21 @@ public interface IDrawUI extends IApp {
 		    box2.getChildren().add(fl);
 		}
 		
-		public default void showImages(VBox box,FlowPane pn) throws Throwable {
-	    	ExecutorService service = Executors.newFixedThreadPool(5);
-	    	ArrayList <Future<String>> tasks = new ArrayList<>();
+		public default ScrollPane showImages(VBox box) throws Throwable {
+			FlowPane pn = new FlowPane();
+			pn.setAlignment(Pos.CENTER);
 	    			
 			for(Result result:Store.list) {
-				tasks.add(service.submit(()->{
-					try {
-						return getBody(result.url,"");
-					} catch (Throwable e) {
-						e.printStackTrace();
-					}
-					return null;
-				}));
+				ImageView view = processImage(result.url);
+				pn.getChildren().add(view);
+				FlowPane.setMargin(view, new Insets(5, 5, 5, 5));
 			}   	
-			
-			for(Future<String> future:tasks) {
-				pn.getChildren().add(processImage((String)future.get()));
-			}
-									
-			service.shutdown();
-			
-	    	this.addResultBar(box,pn);
+						
+	    	return this.addResultBar(box,pn);
 		}
 
-		public default ImageView processImage(String data) {
-			byte [] bytes = data.getBytes();
-			ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
-			Image image = new Image(inputStream,100, 200, false, true);
+		public default ImageView processImage(String url) {
+			Image image = new Image(url, 200, 200, false, true);
 			ImageView imageView = new ImageView(image);
 			return imageView;
 		}
