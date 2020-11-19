@@ -1,11 +1,4 @@
 package org.openjfx.hellofx.interfaces;
-
-import java.io.ByteArrayInputStream;
-import java.util.ArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
 import org.openjfx.hellofx.Result;
 
 import javafx.event.ActionEvent;
@@ -14,8 +7,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.ScrollPane.ScrollBarPolicy;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -24,7 +15,8 @@ import javafx.scene.layout.VBox;
 import store.Store;
 
 public interface IDrawUI extends IApp {
-	  
+	    public final Integer PER_PAGE = 3;
+
 		public default void addLabel(VBox box) {
 			Label label = new Label("Find and download your image".toUpperCase());	
 			label.setStyle("-fx-font-size:30px;");
@@ -32,18 +24,13 @@ public interface IDrawUI extends IApp {
 			VBox.setMargin(label, new Insets(10,10,30,10));
 		}  
 		
-		public default ScrollPane addResultBar(VBox box2,FlowPane fl) {
-			ScrollPane panel = new ScrollPane();
-			String styles = "-fx-max-width:600px;"
-				    + "-fx-min-width:300px;"
+		public default FlowPane addResultBar(VBox box2,FlowPane fl) {
+			String styles = "-fx-min-width:300px;"
 				    + "-fx-width:90%;"
 				    + "-fx-height:300px;"
 				    + "-fx-background-color:white;";
-			panel.setStyle(styles);
 			fl.setStyle(styles);
-			panel.setVbarPolicy(ScrollBarPolicy.ALWAYS);
-			panel.setContent(fl);
-			return panel;
+			return fl;
 		}
 
 		public default void addTextField(VBox box2, EventHandler<ActionEvent> handler) {
@@ -76,11 +63,15 @@ public interface IDrawUI extends IApp {
 		    box2.getChildren().add(fl);
 		}
 		
-		public default ScrollPane showImages(VBox box) throws Throwable {
+		public default FlowPane showImages(VBox box) throws Throwable {
 			FlowPane pn = new FlowPane();
 			pn.setAlignment(Pos.CENTER);
 	    			
 			for(Result result:Store.list) {
+				int index = Store.list.indexOf(result);
+				if(index+1>PER_PAGE){
+                    break;
+				}
 				ImageView view = processImage(result.url);
 				pn.getChildren().add(view);
 				FlowPane.setMargin(view, new Insets(5, 5, 5, 5));

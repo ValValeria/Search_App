@@ -16,15 +16,12 @@ import store.Store;
 
 
 public interface IApp {
-	
+
 	 public default void processResponse(String body) throws JSONException {
 		JSONArray json = (new JSONObject(body)).getJSONObject("photos").getJSONArray("results");
 		ArrayList<Result> list = new ArrayList<>();
 		
         for(int i=0;i<json.length();i++) {
-        	if(i>20) {
-        		break;
-        	}
         	JSONObject obj = json.getJSONObject(i);
             list.add(new Result(obj));
         }

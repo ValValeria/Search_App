@@ -6,6 +6,7 @@ import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import store.Store;
@@ -16,7 +17,7 @@ import org.openjfx.hellofx.interfaces.IDrawUI;
 public class App extends Application implements IDrawUI {
 
 	public final String TITLE = "App";
-	public final int HEIGHT = 400;
+	public final int HEIGHT = 600;
 	public final int WIDTH = 800;
 	private VBox box;
 	final String URL_SEARCH = "https://unsplash.com/napi/search?xp=feedback-loop-v2%3Acontrol&per_page=20&query=";
@@ -64,8 +65,14 @@ public class App extends Application implements IDrawUI {
 				this.box.getChildren().remove(this.pane);
 			}
 
+			ProgressBar progress = new ProgressBar();
+			progress.setProgress(0.25f);
+			this.box.getChildren().add(progress);
+
 			this.processResponse(this.getBody(this.URL_SEARCH, text));
 			this.pane = this.showImages(box);
+
+			this.box.getChildren().remove(progress);
 			this.box.getChildren().add((Node) this.pane);
 		}		
 	}	

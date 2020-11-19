@@ -8,7 +8,7 @@ import org.json.JSONObject;
 abstract class BaseResult{
 	String created_at;
     String description;
-    public String url;
+	public String url;
 }
 
 public class Result extends BaseResult{
