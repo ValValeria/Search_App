@@ -7,7 +7,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -62,7 +61,7 @@ public interface IDrawUI extends IApp {
 		box2.getChildren().add(fl);
 	}
 
-	public default FlowPane showImages(VBox box) throws Throwable {
+	public default FlowPane showImages(VBox box,FlowPane spinner) throws Throwable {
 			FlowPane pn = new FlowPane();
 			pn.setAlignment(Pos.CENTER);
 
@@ -73,6 +72,7 @@ public interface IDrawUI extends IApp {
 				 String url = Store.list.pollFirst().url;
 				 return this.getBodyBytes(url, "");
 			};
+
 
 			for (int i = 0; i < Store.list.size() && i<PER_PAGE; i++) {
 				 tasks.add(callableTask);
@@ -85,6 +85,8 @@ public interface IDrawUI extends IApp {
 			}
 			
 			service.shutdown();
+
+			box.getChildren().remove(spinner);
 						
 	    	return this.addResultBar(box,pn);
 		}

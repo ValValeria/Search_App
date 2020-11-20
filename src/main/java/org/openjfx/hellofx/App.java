@@ -7,6 +7,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import store.Store;
@@ -46,7 +47,6 @@ public class App extends Application implements IDrawUI {
 				}
 			}
 		});
-
 		stage.setTitle(this.TITLE);
 		stage.setMaxWidth(this.WIDTH + 100);
 		stage.setMinWidth(this.WIDTH);
@@ -60,23 +60,32 @@ public class App extends Application implements IDrawUI {
 		String text = Store.text;
 
 		if (!text.isEmpty()) {
-
+			
+			FlowPane spinner = this.addSpinner();
+			
 			if (this.box.getChildren().contains(this.pane)) {
 				this.box.getChildren().remove(this.pane);
 			}
 
-			ProgressIndicator progress = new ProgressIndicator();
-			this.box.getChildren().add(progress);
-
 			this.processResponse(this.getBody(this.URL_SEARCH, text));
-			
-			this.pane = this.showImages(box);
 
-			this.box.getChildren().remove(progress);
+			this.pane = this.showImages(box,spinner);
+
 			this.box.getChildren().add((Node) this.pane);
 		}		
 	}	
-	
+
+	public FlowPane addSpinner(){
+		ProgressIndicator progress = new ProgressIndicator();
+		FlowPane pn = new FlowPane();
+		pn.setAlignment(Pos.CENTER);;
+		pn.setMinHeight(400);
+        pn.setMinWidth(400);
+		pn.getChildren().add(progress);
+		this.box.getChildren().add(pn);
+		return pn;
+	}
+
     public static void main(String[] args) {
         launch();
     }
