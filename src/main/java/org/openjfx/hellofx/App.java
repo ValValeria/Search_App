@@ -6,7 +6,7 @@ import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.ProgressBar;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import store.Store;
@@ -21,14 +21,13 @@ public class App extends Application implements IDrawUI {
 	public final int WIDTH = 800;
 	private VBox box;
 	final String URL_SEARCH = "https://unsplash.com/napi/search?xp=feedback-loop-v2%3Acontrol&per_page=20&query=";
-	final String FONT_COLOR = "#2f3640";
 	private Object pane;
 
 	@SuppressWarnings("exports")
 	@Override
 	public void start(Stage stage) throws IOException {
 		this.box = new VBox(30);
-		this.box.setStyle("-fx-background-color:white;");
+		this.box.setStyle("-fx-background-color:"+ BACKGROUND_COLOR+";");
 		this.box.setAlignment(Pos.CENTER);
 
 		Scene scene = new Scene(this.box);
@@ -52,6 +51,7 @@ public class App extends Application implements IDrawUI {
 		stage.setMaxWidth(this.WIDTH + 100);
 		stage.setMinWidth(this.WIDTH);
 		stage.setMinHeight(this.HEIGHT);
+		stage.setMaxHeight(this.HEIGHT+200);
 		stage.setScene(scene);
 		stage.show();
 	}
@@ -65,8 +65,7 @@ public class App extends Application implements IDrawUI {
 				this.box.getChildren().remove(this.pane);
 			}
 
-			ProgressBar progress = new ProgressBar();
-			progress.setProgress(0.25f);
+			ProgressIndicator progress = new ProgressIndicator();
 			this.box.getChildren().add(progress);
 
 			this.processResponse(this.getBody(this.URL_SEARCH, text));
@@ -77,7 +76,7 @@ public class App extends Application implements IDrawUI {
 		}		
 	}	
 	
-	public static void main(String[] args) {
+    public static void main(String[] args) {
         launch();
     }
 }

@@ -15,11 +15,12 @@ import javafx.scene.layout.VBox;
 import store.Store;
 
 public interface IDrawUI extends IApp {
-	    public final Integer PER_PAGE = 3;
+		public final Integer PER_PAGE = 3;
+		public final static String BACKGROUND_COLOR = "#1A2026";
 
 		public default void addLabel(VBox box) {
 			Label label = new Label("Find and download your image".toUpperCase());	
-			label.setStyle("-fx-font-size:30px;");
+			label.setStyle("-fx-font-size:30px;-fx-text-fill:white;");
 			box.getChildren().add(label);
 			VBox.setMargin(label, new Insets(10,10,30,10));
 		}  
@@ -28,7 +29,7 @@ public interface IDrawUI extends IApp {
 			String styles = "-fx-min-width:300px;"
 				    + "-fx-width:90%;"
 				    + "-fx-height:300px;"
-				    + "-fx-background-color:white;";
+				    + String.format("-fx-background-color:%s;",IDrawUI.BACKGROUND_COLOR);
 			fl.setStyle(styles);
 			return fl;
 		}
@@ -49,11 +50,10 @@ public interface IDrawUI extends IApp {
 				Store.text = newVal;
 			});
 			
-			Button btn = new Button("Search");
+			Button btn = new Button("search");
 			btn.setStyle("-fx-text-fill:white;"
-					+ "-fx-background-color:#2980b9;"
+					+ "-fx-background-color:#f7b731;"
 					+ "-fx-font-size:20px;"
-					+ "-fx-background-radius: 20px;"
 					+ "-fx-padding:5 25px;"
 					);
 			
