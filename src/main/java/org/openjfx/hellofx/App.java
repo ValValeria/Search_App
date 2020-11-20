@@ -69,6 +69,7 @@ public class App extends Application implements IDrawUI {
 			this.box.getChildren().add(progress);
 
 			this.processResponse(this.getBody(this.URL_SEARCH, text));
+			
 			this.pane = this.showImages(box);
 
 			this.box.getChildren().remove(progress);
