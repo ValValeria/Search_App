@@ -2,12 +2,11 @@ package org.openjfx.hellofx;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.ProgressIndicator;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
@@ -51,6 +50,7 @@ public class App extends Application implements IDrawUI {
 		
 		this.pane = new FlowPane();
 		this.addResultBar(box, this.pane);
+		this.pane.setAlignment(Pos.CENTER);
 		this.setVisible(this.pane, false);
 		this.box.getChildren().add(this.pane);
 		
@@ -73,27 +73,18 @@ public class App extends Application implements IDrawUI {
 		if (!text.isEmpty()) {
 			this.setVisible(spinner, true);	
 
-			Platform.runLater(new Runnable(){
-				@Override
-				public void run(){
-			          CompletableFuture.supplyAsync(() -> {
-					    CompletableFuture<List<byte[]>> data = new CompletableFuture<List<byte[]>>();		
-						try {
-							processResponse(getBody(URL_SEARCH, text));
-							data=showImages(box, spinner, pane);
-						} catch (Throwable exp) {
-							System.out.println(String.format("%s has occured. The message: %s",
-									exp.getClass().getName(), exp.getMessage()));
-						};
-						return data;
-					 }).thenAccept((v)->{
-						 try {
-							 v.get().forEach(item -> {
-								ImageView image = processImage(item);
-								pane.getChildren().add(image);
-							});
-						 } catch (Exception e) {						 }
-					   });  
+			Platform.runLater(()->{
+				try {
+					processResponse(getBody(URL_SEARCH, text));
+					showImages(box, spinner, pane).get().forEach(item -> {
+						System.out.println("2");
+						ImageView image = processImage(item);
+						pane.getChildren().add(image);
+					});
+					setVisible(pane, true);
+					setVisible(spinner, false);
+				} catch (Throwable ex) {
+					System.out.println(ex.getMessage());
 				}
 			});
 		}		

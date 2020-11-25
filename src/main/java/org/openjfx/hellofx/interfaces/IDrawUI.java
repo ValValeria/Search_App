@@ -83,7 +83,7 @@ public interface IDrawUI extends IApp {
 		box2.getChildren().add(fl);
 	}
 
-	public default CompletableFuture<List<byte[]>> showImages(VBox box, FlowPane spinner, FlowPane pn) throws Throwable {
+	public default CompletableFuture<List<byte[]>> showImages(VBox box, FlowPane spinner, FlowPane pn){
 		pn.getChildren().clear();
 
 		List<CompletableFuture<byte[]>> list = Store.list.stream().map(v -> {
@@ -102,8 +102,6 @@ public interface IDrawUI extends IApp {
 		    return list.stream().map((v1)->v1.join()).collect(Collectors.toList());
         });
 	
-		this.setVisible(pn,true);
-		this.setVisible(spinner, false);
 		return data;
 		}
 
