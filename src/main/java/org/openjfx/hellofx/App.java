@@ -1,17 +1,22 @@
 package org.openjfx.hellofx;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import store.Store;
 import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
 import org.openjfx.hellofx.interfaces.IDrawUI;
 
 
@@ -22,7 +27,8 @@ public class App extends Application implements IDrawUI {
 	public final int WIDTH = 800;
 	private VBox box;
 	final String URL_SEARCH = "https://unsplash.com/napi/search?xp=feedback-loop-v2%3Acontrol&per_page=20&query=";
-	private Object pane;
+	private FlowPane pane;
+	private FlowPane spinner;
 
 	@SuppressWarnings("exports")
 	@Override
@@ -30,7 +36,7 @@ public class App extends Application implements IDrawUI {
 		this.box = new VBox(30);
 		this.box.setStyle("-fx-background-color:"+ BACKGROUND_COLOR+";");
 		this.box.setAlignment(Pos.CENTER);
-
+   
 		Scene scene = new Scene(this.box);
 
 		this.addLabel(box);
@@ -39,14 +45,19 @@ public class App extends Application implements IDrawUI {
 
 			@Override
 			public void handle(ActionEvent event) {
-				try {
 					sendHttpRequest();
-				} catch (Throwable exception) {
-					System.out.println(String.format("%s has occured. The message: %s", exception.getClass().getName(),
-							exception.getMessage()));
-				}
-			}
+		   }
 		});
+		
+		this.pane = new FlowPane();
+		this.addResultBar(box, this.pane);
+		this.setVisible(this.pane, false);
+		this.box.getChildren().add(this.pane);
+		
+		this.spinner = this.addSpinner();
+		this.box.getChildren().add(spinner);
+		this.setVisible(spinner, false);
+		
 		stage.setTitle(this.TITLE);
 		stage.setMaxWidth(this.WIDTH + 100);
 		stage.setMinWidth(this.WIDTH);
@@ -56,35 +67,37 @@ public class App extends Application implements IDrawUI {
 		stage.show();
 	}
 
-	protected void sendHttpRequest() throws Throwable {
+	protected void sendHttpRequest() {
 		String text = Store.text;
 
 		if (!text.isEmpty()) {
-			
-			FlowPane spinner = this.addSpinner();
-			
-			if (this.box.getChildren().contains(this.pane)) {
-				this.box.getChildren().remove(this.pane);
-			}
+			this.setVisible(spinner, true);	
 
-			this.processResponse(this.getBody(this.URL_SEARCH, text));
-
-			this.pane = this.showImages(box,spinner);
-
-			this.box.getChildren().add((Node) this.pane);
+			Platform.runLater(new Runnable(){
+				@Override
+				public void run(){
+			          CompletableFuture.supplyAsync(() -> {
+					    CompletableFuture<List<byte[]>> data = new CompletableFuture<List<byte[]>>();		
+						try {
+							processResponse(getBody(URL_SEARCH, text));
+							data=showImages(box, spinner, pane);
+						} catch (Throwable exp) {
+							System.out.println(String.format("%s has occured. The message: %s",
+									exp.getClass().getName(), exp.getMessage()));
+						};
+						return data;
+					 }).thenAccept((v)->{
+						 try {
+							 v.get().forEach(item -> {
+								ImageView image = processImage(item);
+								pane.getChildren().add(image);
+							});
+						 } catch (Exception e) {						 }
+					   });  
+				}
+			});
 		}		
 	}	
-
-	public FlowPane addSpinner(){
-		ProgressIndicator progress = new ProgressIndicator();
-		FlowPane pn = new FlowPane();
-		pn.setAlignment(Pos.CENTER);;
-		pn.setMinHeight(400);
-        pn.setMinWidth(400);
-		pn.getChildren().add(progress);
-		this.box.getChildren().add(pn);
-		return pn;
-	}
 
     public static void main(String[] args) {
         launch();

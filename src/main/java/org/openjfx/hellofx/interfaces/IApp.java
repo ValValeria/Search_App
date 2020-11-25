@@ -34,7 +34,8 @@ public interface IApp {
             list.add(new Result(obj));
         }
         
-        Store.list.addAll(list);
+		Store.list.clear();
+		Store.list.addAll(list);
 	}
 	
 	public default String getBody(String url,String text) throws URISyntaxException,IOException,InterruptedException {

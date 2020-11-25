@@ -1,20 +1,29 @@
 package org.openjfx.hellofx.interfaces;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.openjfx.hellofx.Result;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
@@ -23,6 +32,15 @@ import store.Store;
 
 public interface IDrawUI extends IApp {
 	public final static String BACKGROUND_COLOR = "#1A2026";
+
+	public default FlowPane addSpinner() {
+		ProgressIndicator progress = new ProgressIndicator();
+		FlowPane pn = new FlowPane();
+		pn.setAlignment(Pos.CENTER);
+		pn.setMinWidth(400);
+		pn.getChildren().add(progress);
+		return pn;
+	}
 
 	public default void addLabel(VBox box) {
 		Label label = new Label("Find and download your image".toUpperCase());
@@ -43,9 +61,13 @@ public interface IDrawUI extends IApp {
 		FlowPane fl = new FlowPane(20, 20);
 		fl.setAlignment(Pos.CENTER);
 
+		Tooltip tooltip = new Tooltip("Please type valid text");
+
 		TextField txt = new TextField();
 		txt.setStyle("-fx-max-width:600px;" + "-fx-min-width:300px;" + "-fx-width:70%;" + "-fx-padding:10px;"
 				+ "-fx-font-size:16px;");
+
+		txt.setTooltip(tooltip);
 
 		txt.textProperty().addListener((observable, oldVal, newVal) -> {
 			Store.text = newVal;
@@ -61,34 +83,28 @@ public interface IDrawUI extends IApp {
 		box2.getChildren().add(fl);
 	}
 
-	public default FlowPane showImages(VBox box,FlowPane spinner) throws Throwable {
-			FlowPane pn = new FlowPane();
-			pn.setAlignment(Pos.CENTER);
+	public default CompletableFuture<List<byte[]>> showImages(VBox box, FlowPane spinner, FlowPane pn) throws Throwable {
+		pn.getChildren().clear();
 
-			ExecutorService service = Executors.newFixedThreadPool(PER_PAGE);
-			List <Callable<byte[]>> tasks = new ArrayList<>();
+		List<CompletableFuture<byte[]>> list = Store.list.stream().map(v -> {
+			byte[] bytes_data={};
+
+			try {
+				bytes_data = this.getBodyBytes(v.url, "");
+			} catch (URISyntaxException | IOException | InterruptedException e) {}
 			
-			Callable<byte[]> callableTask = ()->{
-				 String url = Store.list.pollFirst().url;
-				 return this.getBodyBytes(url, "");
-			};
+			return CompletableFuture.completedFuture(bytes_data);
+		}).collect(Collectors.toList());
 
+		CompletableFuture<Void> future = CompletableFuture.allOf(list.toArray(new CompletableFuture[0]));
 
-			for (int i = 0; i < Store.list.size() && i<PER_PAGE; i++) {
-				 tasks.add(callableTask);
-			}
-					
-			for (Future<byte[]> future : service.invokeAll(tasks)) {
-				ImageView view = processImage(future.get());
-				pn.getChildren().add(view);
-				FlowPane.setMargin(view, new Insets(5, 5, 5, 5));
-			}
-			
-			service.shutdown();
-
-			box.getChildren().remove(spinner);
-						
-	    	return this.addResultBar(box,pn);
+		CompletableFuture<List<byte[]>> data = future.thenApply(v -> {
+		    return list.stream().map((v1)->v1.join()).collect(Collectors.toList());
+        });
+	
+		this.setVisible(pn,true);
+		this.setVisible(spinner, false);
+		return data;
 		}
 
 		public default ImageView processImage(byte[] data) {
@@ -96,5 +112,11 @@ public interface IDrawUI extends IApp {
 			Image image = new Image(stream, 200, 200, false, true);
 			ImageView imageView = new ImageView(image);
 			return imageView;
+		}
+
+		public default void setVisible(Node node,Boolean isVisible){
+			node.setVisible(isVisible);
+			node.setManaged(isVisible);
+			node.setStyle("-fx-min-height:200px;");
 		}
 }
