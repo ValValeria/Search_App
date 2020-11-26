@@ -25,7 +25,7 @@ public interface IApp {
 	 * @param body
 	 * @throws JSONException
 	 */
-	 public default void processResponse(String body) throws JSONException {
+	 public default Collection<Result> processResponse(String body) throws JSONException {
 		JSONArray json = (new JSONObject(body)).getJSONObject("photos").getJSONArray("results");
 		Collection<Result> list = new ArrayDeque<>();
 		
@@ -36,6 +36,7 @@ public interface IApp {
         
 		Store.list.clear();
 		Store.list.addAll(list);
+		return Store.list;
 	}
 	
 	public default String getBody(String url,String text) throws URISyntaxException,IOException,InterruptedException {

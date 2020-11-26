@@ -14,6 +14,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.openjfx.hellofx.Result;
+
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -83,38 +85,39 @@ public interface IDrawUI extends IApp {
 		box2.getChildren().add(fl);
 	}
 
-	public default CompletableFuture<List<byte[]>> showImages(VBox box, FlowPane spinner, FlowPane pn){
-		pn.getChildren().clear();
-
+	public default List<byte[]> showImages(VBox box, FlowPane spinner) {
+		
 		List<CompletableFuture<byte[]>> list = Store.list.stream().map(v -> {
-			byte[] bytes_data={};
+			byte[] bytes_data = {};
 
 			try {
 				bytes_data = this.getBodyBytes(v.url, "");
-			} catch (URISyntaxException | IOException | InterruptedException e) {}
-			
+			} catch (URISyntaxException | IOException | InterruptedException e) {
+				System.out.println(e.getMessage());
+			}
+
 			return CompletableFuture.completedFuture(bytes_data);
 		}).collect(Collectors.toList());
 
 		CompletableFuture<Void> future = CompletableFuture.allOf(list.toArray(new CompletableFuture[0]));
 
 		CompletableFuture<List<byte[]>> data = future.thenApply(v -> {
-		    return list.stream().map((v1)->v1.join()).collect(Collectors.toList());
-        });
-	
-		return data;
-		}
+			return list.stream().map((v1) -> v1.join()).collect(Collectors.toList());
+		});
 
-		public default ImageView processImage(byte[] data) {
+		return data.join(); 
+	}
+
+	public default ImageView processImage(byte[] data) {
 			ByteArrayInputStream stream = new ByteArrayInputStream(data);
 			Image image = new Image(stream, 200, 200, false, true);
 			ImageView imageView = new ImageView(image);
 			return imageView;
-		}
+	}
 
-		public default void setVisible(Node node,Boolean isVisible){
+	public default void setVisible(Node node,Boolean isVisible){
 			node.setVisible(isVisible);
 			node.setManaged(isVisible);
 			node.setStyle("-fx-min-height:200px;");
-		}
+	}
 }
