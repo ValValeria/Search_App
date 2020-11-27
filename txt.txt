@@ -1,2 +1,0 @@
-- Executor service
-https://www.baeldung.com/java-executor-service-tutorial

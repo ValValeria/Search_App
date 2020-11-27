@@ -1,26 +1,37 @@
 package org.openjfx.hellofx;
 
+import javafx.animation.FadeTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import store.Store;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.CopyOption;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NavigableSet;
-import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-
 import org.openjfx.hellofx.interfaces.IDrawUI;
+
 
 public class App extends Application implements IDrawUI {
 
@@ -35,6 +46,8 @@ public class App extends Application implements IDrawUI {
 	private int page = 1;
 	private Button prev_btn;
 	private Button next_btn;
+	private Stage stage;
+	final DirectoryChooser directoryChooser = new DirectoryChooser();
 
 	@SuppressWarnings("exports")
 	@Override
@@ -42,6 +55,7 @@ public class App extends Application implements IDrawUI {
 		this.box = new VBox(30);
 		this.box.setStyle("-fx-background-color:" + BACKGROUND_COLOR + ";");
 		this.box.setAlignment(Pos.CENTER);
+		this.stage = stage;
 
 		Scene scene = new Scene(this.box);
 
@@ -109,14 +123,34 @@ public class App extends Application implements IDrawUI {
 
 			Platform.runLater(() -> {
 				list.forEach(item -> {
+					StackPane stack = new StackPane();
 					ImageView image = processImage(item);
-					this.pane.getChildren().add(image);
+					FlowPane content = new FlowPane();
+					this.addDownloadContent(content,item);
+					content.setStyle("-fx-background-color:#2F3538;-fx-opacity:0.9;");
+					content.setPrefSize(stack.getWidth(),stack.getHeight());
+					stack.setMaxWidth(image.getFitWidth());
+					content.setAlignment(Pos.CENTER);
+					setVisible(content,false);
+
+					stack.setOnMouseEntered((e)->{
+						fade(content,0,0.9); 
+						setVisible(content, true);
+					});
+
+					stack.setOnMouseExited((e)->{
+						fade(content,0.9,0);
+						System.out.println("moveout");
+					});
+
+					stack.getChildren().addAll(image,content);
+					this.pane.getChildren().add(stack);
 				});
 				setVisible(this.pane, true);
 				setVisible(spinner, false);
 				int math = (int) Math.ceil(Store.list.size() / PER_PAGE);
 
-				if ( math >= page) {///????
+				if ( math >= page) {
 					this.removePagination();
 					this.addPagination(math);
 				} 
@@ -124,7 +158,24 @@ public class App extends Application implements IDrawUI {
 		});
 	}
 
-    private void removePagination() {
+    private void addDownloadContent(FlowPane content,byte bytes[]) {
+		Button btnDownLoad = new Button("Скачать");
+		btnDownLoad.setOnAction((e)->{
+			configuringDirectoryChooser(directoryChooser);
+			File directory = directoryChooser.showDialog(this.stage);
+			String path = directory.getAbsolutePath()+"\\image.jpg";
+			ByteArrayInputStream stream = new ByteArrayInputStream(bytes);
+			try {
+				long size = Files.copy(stream, Paths.get(path), StandardCopyOption.REPLACE_EXISTING);
+				System.out.println(size+path);
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+		});
+		content.getChildren().add(btnDownLoad);
+	}
+
+	private void removePagination() {
 	    if(this.box.getChildren().contains(this.pagination)){
 			this.box.getChildren().remove(this.pagination);
 		}
@@ -174,6 +225,20 @@ public class App extends Application implements IDrawUI {
 
 	public static void main(String[] args) {
         launch();
-    }
+	}
+	
+	public void fade(Node content,double from, double to){
+		FadeTransition fade = new FadeTransition();
+		fade.setDuration(Duration.millis(1000));
+		fade.setFromValue(from);
+		fade.setToValue(to);
+		fade.setNode(content);
+		fade.play();
+	}
+
+	private void configuringDirectoryChooser(DirectoryChooser directoryChooser) {
+		directoryChooser.setTitle("Select Some Directories");
+		directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+	}
 }
 
