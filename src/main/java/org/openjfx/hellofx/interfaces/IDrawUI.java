@@ -3,19 +3,13 @@ package org.openjfx.hellofx.interfaces;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
+
 import org.openjfx.hellofx.Result;
 
-import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -85,18 +79,21 @@ public interface IDrawUI extends IApp {
 		box2.getChildren().add(fl);
 	}
 
-	public default List<byte[]> showImages(VBox box, FlowPane spinner) {
-		
-		List<CompletableFuture<byte[]>> list = Store.list.stream().map(v -> {
-			byte[] bytes_data = {};
+	public default List<byte[]> showImages(VBox box, FlowPane spinner, Collection<Result> results) {
 
-			try {
-				bytes_data = this.getBodyBytes(v.url, "");
-			} catch (URISyntaxException | IOException | InterruptedException e) {
-				System.out.println(e.getMessage());
-			}
+		List<CompletableFuture<byte[]>> list = results.stream().map(v -> {
 
-			return CompletableFuture.completedFuture(bytes_data);
+			Store.bytes_store.computeIfAbsent(v.url, (key) -> {
+				try {
+					return this.getBodyBytes(v.url, "");
+				} catch (Throwable e) {
+					e.printStackTrace();
+				}
+				return null;
+			});
+
+			return CompletableFuture.completedFuture(Store.bytes_store.get(v.url));
+
 		}).collect(Collectors.toList());
 
 		CompletableFuture<Void> future = CompletableFuture.allOf(list.toArray(new CompletableFuture[0]));
@@ -109,6 +106,9 @@ public interface IDrawUI extends IApp {
 	}
 
 	public default ImageView processImage(byte[] data) {
+		    if(data.length==0){
+				return null;
+			}
 			ByteArrayInputStream stream = new ByteArrayInputStream(data);
 			Image image = new Image(stream, 200, 200, false, true);
 			ImageView imageView = new ImageView(image);

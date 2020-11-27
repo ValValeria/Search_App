@@ -29,7 +29,7 @@ public interface IApp {
 		JSONArray json = (new JSONObject(body)).getJSONObject("photos").getJSONArray("results");
 		Collection<Result> list = new ArrayDeque<>();
 		
-        for(int i=0;i<json.length() && i<PER_PAGE;i++) {
+        for(int i=0;i<json.length();i++) {
         	JSONObject obj = json.getJSONObject(i);
             list.add(new Result(obj));
         }

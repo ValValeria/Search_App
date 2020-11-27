@@ -2,23 +2,24 @@ package org.openjfx.hellofx;
 
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import store.Store;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.NavigableSet;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
-import org.json.JSONException;
 import org.openjfx.hellofx.interfaces.IDrawUI;
 
 public class App extends Application implements IDrawUI {
@@ -30,6 +31,10 @@ public class App extends Application implements IDrawUI {
 	final String URL_SEARCH = "https://unsplash.com/napi/search?xp=feedback-loop-v2%3Acontrol&per_page=20&query=";
 	private FlowPane pane;
 	private FlowPane spinner;
+	private FlowPane pagination;
+	private int page = 1;
+	private Button prev_btn;
+	private Button next_btn;
 
 	@SuppressWarnings("exports")
 	@Override
@@ -71,37 +76,103 @@ public class App extends Application implements IDrawUI {
 
 	protected void sendHttpRequest() {
 		String text = Store.text;
+		this.page = 1;
 
 		if (!text.isEmpty()) {
-			this.setVisible(spinner, true);
-			this.setVisible(this.pane, false);
-			this.pane.getChildren().clear();
-
-			CompletableFuture.supplyAsync(() -> {
-				try {
-					return processResponse(getBody(URL_SEARCH, text));
-				} catch (Throwable e) {
-					e.printStackTrace();
-				}
-				return null;
-			})
-			.thenAccept(v->{
-				List<byte[]> list = this.showImages(box, spinner);
-				Platform.runLater(() -> {
-					list.forEach(item -> {
-						System.out.println(item.length);
-						ImageView image = processImage(item);
-						this.pane.getChildren().add(image);
-					});
-					setVisible(this.pane, true);
-					setVisible(spinner, false);
-				});		
-			})
-			;
+		     this.runTask(text,false);
 		}		
 	}	
 
-    public static void main(String[] args) {
+	private void runTask(String text,boolean isPagination){
+		this.setVisible(spinner, true);
+		this.setVisible(this.pane, false);
+		this.pane.getChildren().clear();
+
+		CompletableFuture.supplyAsync(() -> {
+			try {
+				List<Result> data = new ArrayList<>();
+				int start = PER_PAGE * (page - 1);
+				int end = start + PER_PAGE;
+              
+				if(!isPagination){
+					data.addAll(processResponse(getBody(URL_SEARCH, text)));
+				} else{
+					data.addAll(Store.list);
+				}
+				return data.subList(start, end);
+			} catch (Throwable e) {
+				e.printStackTrace();
+			}
+			return null;
+		}).thenAccept(v -> {
+			List<byte[]> list = this.showImages(box, spinner,v);
+
+			Platform.runLater(() -> {
+				list.forEach(item -> {
+					ImageView image = processImage(item);
+					this.pane.getChildren().add(image);
+				});
+				setVisible(this.pane, true);
+				setVisible(spinner, false);
+				int math = (int) Math.ceil(Store.list.size() / PER_PAGE);
+
+				if ( math >= page) {///????
+					this.removePagination();
+					this.addPagination(math);
+				} 
+			});
+		});
+	}
+
+    private void removePagination() {
+	    if(this.box.getChildren().contains(this.pagination)){
+			this.box.getChildren().remove(this.pagination);
+		}
+	}
+
+	private void addPagination(int math) {
+		this.pagination = new FlowPane();
+		this.pagination.setAlignment(Pos.CENTER);
+		this.pagination.setHgap(10);
+		this.pagination.setVgap(10);
+		String style = "-fx-background-color:#F1EBE5;"
+				+ "-fx-font-size:14px;" + "-fx-padding:5 25px;"
+				+ "-fx-width:150px;";
+		
+		Consumer<String> consumer = (v)->{
+            if(v=="prev" && this.page>1){
+			   this.page-=1;
+			}else if(v=="next" && Store.list.size()>(PER_PAGE*page)){
+			   this.page +=1;
+			   this.prev_btn.setDisable(false);
+			}
+			runTask(Store.text, true);
+		};
+        
+		this.prev_btn = new Button("previous");
+        prev_btn.setOnAction((e)->{
+			consumer.accept("prev");
+		});
+		prev_btn.setStyle(style);
+		if(this.page==1){
+			prev_btn.setDisable(true);
+		}
+		
+		this.next_btn = new Button("next");
+		next_btn.setOnAction((e) -> {
+			consumer.accept("next");
+		});
+		next_btn.setStyle(style);
+		if(math==page){
+             next_btn.setDisable(true); 
+		}
+
+		this.pagination.getChildren().addAll(prev_btn,next_btn);
+
+		this.box.getChildren().add(this.pagination);
+	}
+
+	public static void main(String[] args) {
         launch();
     }
 }
