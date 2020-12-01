@@ -18,7 +18,7 @@ import store.Store;
 
 public interface IApp {
 
-	 public final Integer PER_PAGE = 3;
+	 public final Integer PER_PAGE = 2;
 
 	/**
 	 * Adds urls to collection, located in the class, named `Store`
