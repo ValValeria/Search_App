@@ -112,8 +112,18 @@ public interface IDrawUI extends IApp {
 	}
 
 	public default void setVisible(Node node,Boolean isVisible){
-			node.setVisible(isVisible);
-			node.setManaged(isVisible);
-			node.setStyle("-fx-min-height:200px;");
+		node.setVisible(isVisible);
+		node.setManaged(isVisible);
+		node.setStyle("-fx-min-height:200px;");
+	}
+
+	public default void setStylesView(Node node)
+    {
+		node.setStyle("-fx-background-color: #1A2026;-fx-width:100%;-fx-padding:10px;");
+	}
+
+	public default void setWhiteFont(Node node)
+	{
+        node.setStyle("-fx-text-fill:white;" + "-fx-font-size:16px;");
 	}
 }

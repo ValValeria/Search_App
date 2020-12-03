@@ -11,9 +11,14 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Accordion;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TitledPane;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.ScrollPane.ScrollBarPolicy;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
@@ -50,7 +55,7 @@ import org.openjfx.hellofx.interfaces.IDrawUI;
 public class BaseApp extends Application implements IDrawUI {
     public final String TITLE = "App";
     public final int HEIGHT = 700;
-    public final int WIDTH = 900;
+    public final int WIDTH = 1000;
     private VBox box;
     final String URL_SEARCH = "https://unsplash.com/napi/search?xp=feedback-loop-v2%3Acontrol&per_page=20&query=";
     private FlowPane pane;
@@ -91,19 +96,30 @@ public class BaseApp extends Application implements IDrawUI {
     @Override
     public void start(Stage stage) throws IOException {
         BorderPane borderPane = new BorderPane();
+        borderPane.setStyle("-fx-background-color:white;");
+        borderPane.setStyle("-fx-background-color:white;-fx-height:100%;-fx-width:100%;");
 
         this.box = new VBox(30);
         this.box.setStyle("-fx-background-color:" + BACKGROUND_COLOR + ";-fx-padding:30px;");
         this.box.setAlignment(Pos.CENTER);
         this.stage = stage;
+        
 
         this.boxRight = new VBox(30);
-        this.boxRight.setStyle("-fx-background-color:white;-fx-height:100%;-fx-width:100%;-fx-padding:40px;");
+        this.boxRight.setStyle("-fx-height:100%;-fx-width:100%;-fx-padding:40px;");
+        this.boxRight.setPrefHeight(this.stage.getHeight());
         this.box.setAlignment(Pos.CENTER);
         this.addHistory();
 
+        ScrollPane scrollBoxRight = new ScrollPane();
+        this.boxRight.setStyle("-fx-height:100%;-fx-width:100%;-fx-padding:40px;");
+        scrollBoxRight.setHbarPolicy(ScrollBarPolicy.AS_NEEDED);
+        scrollBoxRight.setHbarPolicy(ScrollBarPolicy.AS_NEEDED);
+        scrollBoxRight.setContent(this.boxRight);
+        scrollBoxRight.setPrefViewportHeight(this.stage.getHeight());
+
         borderPane.setLeft(this.box);
-        borderPane.setCenter(this.boxRight);
+        borderPane.setCenter(scrollBoxRight);
 
         Scene scene = new Scene(borderPane);
 
@@ -117,8 +133,18 @@ public class BaseApp extends Application implements IDrawUI {
             }
         });
         
-        choicesView = new FlowPane();
+        choicesView = new FlowPane(10,10);
+        setStylesView(choicesView);
+        choicesView.setAlignment(Pos.CENTER);
         
+        RadioButton btn1 = new RadioButton("Video");
+        RadioButton btn2 = new RadioButton("Image");
+        btn2.setSelected(true);
+        setWhiteFont(btn2);
+        setWhiteFont(btn1);
+        
+        choicesView.getChildren().addAll(btn2,btn1);
+        this.box.getChildren().add(choicesView);
 
         this.pane = new FlowPane();
         this.addResultBar(box, this.pane);
@@ -140,8 +166,8 @@ public class BaseApp extends Application implements IDrawUI {
     }
 
     private void addHistory() {
-        Label label = new Label("History");
-        label.setStyle("-fx-font-size:20px;-fx-width:100%;");
+        Label label = new Label("History".toUpperCase());
+        label.setStyle("-fx-font-size:25px;-fx-width:100%;");
         label.setAlignment(Pos.CENTER);
         this.boxRight.getChildren().add(label);
 
@@ -159,14 +185,18 @@ public class BaseApp extends Application implements IDrawUI {
     private void addtilepane(List<String> s, byte[] p) {
         TitledPane titledPane = new TitledPane();
         titledPane.setText(s.get(0));
+        titledPane.setStyle("-fx-font-size:16px;");
         VBox vbox = new VBox(10);
         vbox.setAlignment(Pos.CENTER);
+        vbox.setStyle("-fx-background-color:white;");
         Label filePath = new Label("Path : " + s.get(1));
+        filePath.setStyle("-fx-font-size:16px;");
 
-        Image image = new Image(new ByteArrayInputStream(p), 150, 150, false, true);
+        Image image = new Image(new ByteArrayInputStream(p), 200, 200, false, true);
         ImageView imageView = new ImageView(image);
 
         Button button = new Button("Delete");
+        button.setStyle("-fx-font-size:16px;");
 
         button.setOnAction((e) -> {
             try {
@@ -186,7 +216,14 @@ public class BaseApp extends Application implements IDrawUI {
                 Platform.runLater(runnable);
 
             } catch (Throwable error) {
-                System.out.print(error.getMessage());
+                Alert alert = new Alert(AlertType.INFORMATION);
+                alert.setTitle("Error");
+                alert.setContentText("Your file has been deleted by someone. Sorry");
+                alert.setHeaderText(null);
+                alert.showAndWait();
+
+                this.accordion.getPanes().remove(titledPane);
+                this.history.remove(s, p);
             }
         });
         
