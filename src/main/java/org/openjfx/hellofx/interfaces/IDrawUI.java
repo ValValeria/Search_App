@@ -106,7 +106,7 @@ public interface IDrawUI extends IApp {
 				return null;
 			}
 			ByteArrayInputStream stream = new ByteArrayInputStream(data);
-			Image image = new Image(stream, 200, 200, false, true);
+			Image image = new Image(stream, 250, 250, false, true);
 			ImageView imageView = new ImageView(image);
 			return imageView;
 	}

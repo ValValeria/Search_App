@@ -11,4 +11,5 @@ public class Store {
     public static String text = "";
     public static ArrayDeque<Result> list = new ArrayDeque<>();
     public static  Map<String,byte[]> bytes_store = new HashMap<String, byte[]>();
+    public static Boolean isVideo = false;
 }

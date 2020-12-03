@@ -10,9 +10,11 @@ import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Accordion;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TitledPane;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
@@ -26,9 +28,7 @@ import java.io.FileOutputStream;
 import javafx.util.Duration;
 import store.Store;
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -36,6 +36,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -46,8 +49,8 @@ import org.openjfx.hellofx.interfaces.IDrawUI;
 
 public class BaseApp extends Application implements IDrawUI {
     public final String TITLE = "App";
-    public final int HEIGHT = 600;
-    public final int WIDTH = 800;
+    public final int HEIGHT = 700;
+    public final int WIDTH = 900;
     private VBox box;
     final String URL_SEARCH = "https://unsplash.com/napi/search?xp=feedback-loop-v2%3Acontrol&per_page=20&query=";
     private FlowPane pane;
@@ -60,8 +63,10 @@ public class BaseApp extends Application implements IDrawUI {
     final DirectoryChooser directoryChooser = new DirectoryChooser();
     private VBox boxRight;
     private Path path;
-    protected Map<String, String> history = new HashMap<>();
+    protected Map<List<String>, byte[]> history = new HashMap<>();
     private ObjectInputStream historyStream;
+    private Accordion accordion;
+    private FlowPane choicesView;
 
     @Override
     public void init() {
@@ -74,10 +79,10 @@ public class BaseApp extends Application implements IDrawUI {
                 Files.createFile(path);
             } else {
                 historyStream = new ObjectInputStream(new FileInputStream(path.toString()));
-                this.history.putAll((Map<String, String>) historyStream.readObject());
+                this.history.putAll((Map<List<String>, byte[]>) historyStream.readObject());
             }
 
-        } catch (Throwable e) { 
+        } catch (Throwable e) {
             System.out.println(e.getMessage());
         }
     }
@@ -111,6 +116,9 @@ public class BaseApp extends Application implements IDrawUI {
                 sendHttpRequest();
             }
         });
+        
+        choicesView = new FlowPane();
+        
 
         this.pane = new FlowPane();
         this.addResultBar(box, this.pane);
@@ -133,23 +141,63 @@ public class BaseApp extends Application implements IDrawUI {
 
     private void addHistory() {
         Label label = new Label("History");
-        label.setStyle("-fx-font-size:20px;");
+        label.setStyle("-fx-font-size:20px;-fx-width:100%;");
         label.setAlignment(Pos.CENTER);
         this.boxRight.getChildren().add(label);
 
+        this.accordion = new Accordion();
+
         if (this.history.size() > 0) {
             this.history.forEach((s, p) -> {
-                TitledPane titledPane = new TitledPane();
-                titledPane.setText(s);
-                VBox vbox = new VBox(10);
-                vbox.getChildren().add(new Label(p));
-                titledPane.setContent(vbox);
-                this.boxRight.getChildren().add(titledPane);
+                this.addtilepane(s, p);
             });
         }
+
+        this.boxRight.getChildren().add(this.accordion);
     }
 
-    protected void sendHttpRequest() {
+    private void addtilepane(List<String> s, byte[] p) {
+        TitledPane titledPane = new TitledPane();
+        titledPane.setText(s.get(0));
+        VBox vbox = new VBox(10);
+        vbox.setAlignment(Pos.CENTER);
+        Label filePath = new Label("Path : " + s.get(1));
+
+        Image image = new Image(new ByteArrayInputStream(p), 150, 150, false, true);
+        ImageView imageView = new ImageView(image);
+
+        Button button = new Button("Delete");
+
+        button.setOnAction((e) -> {
+            try {
+                Files.delete(Paths.get(s.get(1)));
+                this.fade(titledPane, 1, 0);
+
+                Runnable runnable = () -> {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
+                    this.accordion.getPanes().remove(titledPane);
+                    this.history.remove(s, p);
+                };
+
+                Platform.runLater(runnable);
+
+            } catch (Throwable error) {
+                System.out.print(error.getMessage());
+            }
+        });
+        
+        vbox.getChildren().addAll(filePath,imageView,button);
+
+        titledPane.setContent(vbox);
+        this.accordion.getPanes().add(titledPane);
+    }
+
+    protected void sendHttpRequest()
+    {
         String text = Store.text;
         this.page = 1;
 
@@ -158,7 +206,8 @@ public class BaseApp extends Application implements IDrawUI {
         }
     }
 
-    private void runTask(String text, boolean isPagination) {
+    private void runTask(String text, boolean isPagination)
+    {
         this.setVisible(spinner, true);
         this.setVisible(this.pane, false);
         this.pane.getChildren().clear();
@@ -221,21 +270,32 @@ public class BaseApp extends Application implements IDrawUI {
         });
     }
 
-    private void addDownloadContent(FlowPane content, byte bytes[], double d, double f) {
+    private void addDownloadContent(FlowPane content, byte bytes[], double d, double f) 
+    {
         Button btnDownLoad = new Button("download");
+
         String width = String.valueOf(d) + "px";
         String height = String.valueOf(f) + "px";
         content.setStyle("-fx-background-color:#231F20;" + String.format("-fx-width:%s;-fx-height:%s", width, height));
+       
         btnDownLoad.setStyle("-fx-text-fill:white;" + "-fx-background-color:#f7b731;" + "-fx-font-size:20px;"
                 + "-fx-padding:5 25px;");
 
         btnDownLoad.setOnAction((e) -> {
             configuringDirectoryChooser(directoryChooser);
+
             File directory = directoryChooser.showDialog(this.stage);
-            String filename = "\\"+Math.random() + "image.jpg";
-            String path = directory.getAbsolutePath()+filename;
-            addToHistory(filename, path);
+            LocalDateTime myDateObj = LocalDateTime.now();
+            DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("dd-MM-HH-mm-ss");
+
+            String filename = myFormatObj.format(myDateObj) + "image.jpg";
+            System.out.println(filename);
+            String path = Paths.get(directory.getAbsolutePath(),filename).toAbsolutePath().toString();
+           
             ByteArrayInputStream stream = new ByteArrayInputStream(bytes);
+
+            addToHistory(filename, path,bytes);
+
             try {
                 Files.copy(stream, Paths.get(path), StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e1) {
@@ -245,23 +305,22 @@ public class BaseApp extends Application implements IDrawUI {
         content.getChildren().add(btnDownLoad);
     }
 
-    private void addToHistory(String file, String path2) {
-        this.history.put(file, path2);
-        TitledPane titledPane = new TitledPane();
-        titledPane.setText(file);
-        VBox vbox = new VBox(10);
-        vbox.getChildren().add(new Label(path2));
-        titledPane.setContent(vbox);
-        this.boxRight.getChildren().add(titledPane);
+    private void addToHistory(String file, String path2,byte[] bytes_data) 
+    {
+        List<String> file_data = List.of(file,path2);
+        this.history.put(file_data, bytes_data);
+        this.addtilepane(file_data,bytes_data);
     }
 
-    private void removePagination() {
+    private void removePagination() 
+    {
         if (this.box.getChildren().contains(this.pagination)) {
             this.box.getChildren().remove(this.pagination);
         }
     }
 
-    private void addPagination(int math) {
+    private void addPagination(int math) 
+    {
         this.pagination = new FlowPane();
         this.pagination.setAlignment(Pos.CENTER);
         this.pagination.setHgap(10);
@@ -302,7 +361,8 @@ public class BaseApp extends Application implements IDrawUI {
         this.box.getChildren().add(this.pagination);
     }
 
-    public void fade(Node content, double from, double to) {
+    public void fade(Node content, double from, double to)
+    {
         FadeTransition fade = new FadeTransition();
         fade.setDuration(Duration.millis(1000));
         fade.setFromValue(from);
@@ -311,22 +371,25 @@ public class BaseApp extends Application implements IDrawUI {
         fade.play();
     }
 
-    private void configuringDirectoryChooser(DirectoryChooser directoryChooser) {
+    private void configuringDirectoryChooser(DirectoryChooser directoryChooser) 
+    {
         directoryChooser.setTitle("Select Some Directories");
         directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
     }
 
     @Override
-    public void stop() {
-        try {
-            FileOutputStream file_stream = new FileOutputStream(this.path.toFile());
-            file_stream.flush();
-            ObjectOutputStream stream = new ObjectOutputStream(file_stream);
+    public void stop() 
+    {
+        try(  FileOutputStream file_stream = new FileOutputStream(this.path.toFile());
+              ObjectOutputStream stream = new ObjectOutputStream(file_stream);) {
+            
+            stream.flush();
             stream.writeObject(this.history);
+
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        } 
     }
 }
